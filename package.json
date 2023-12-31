@@ -1,0 +1,36 @@
+{
+	"name": "pb-option-builder",
+	"version": "0.0.1",
+	"description": "Option builder for the official PocketBase SDK that also helps with typing the response",
+	"author": "satohshi",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/satohshi/pocketbase-option-builder"
+	},
+	"license": "MIT",
+	"keywords": [
+		"pocketbase",
+		"typescript",
+		"option",
+		"types",
+		"schema"
+	],
+	"main": "dist/index.js",
+	"module": "dist/index.mjs",
+	"types": "dist/index.d.ts",
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"build": "tsup src/index.ts --format cjs,esm --dts",
+		"test": "vitest",
+		"lint": "tsc"
+	},
+	"devDependencies": {
+		"@changesets/cli": "^2.27.1",
+		"prettier": "3.1.1",
+		"tsup": "^8.0.1",
+		"typescript": "^5.3.3",
+		"vitest": "^1.1.0"
+	}
+}
