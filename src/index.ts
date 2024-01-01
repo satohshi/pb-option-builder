@@ -3,10 +3,20 @@ type PocketBaseOption = { fields?: string; expand?: string; sort?: string; filte
 type BaseSchema = Record<string, unknown>
 type BaseRelation<T extends BaseSchema> = Record<string, T[keyof T] | Array<T[keyof T]>>
 
+// prettier-ignore
+type WithEllipsis = '' | `${',' | ', '}${boolean}`
+type Modifier = `:excerpt(${number}${WithEllipsis})`
+
+type RemoveModifier<T extends string> = T extends `${infer U}:${infer V}` ? U : T
+
 type Option<TSchema extends BaseSchema, TRelation extends BaseRelation<TSchema>> = {
 	[Key in keyof TSchema]: {
 		key: Key
-		fields?: (keyof TSchema[Key] & string)[]
+		fields?: (keyof {
+			[K in keyof TSchema[Key] & string as TSchema[Key][K] extends string
+				? `${K}${'' | Modifier}`
+				: K]: unknown
+		})[]
 		expand?: Expand<TSchema, TRelation, Related<TSchema, TRelation, TSchema[Key]>>[]
 		sort?: '@random' | `${'' | '+' | '-'}${keyof TSchema[Key] & string}`
 		filter?: string
@@ -22,8 +32,15 @@ type Expand<
 	[Key in TKey]: {
 		key: Key
 		fields?: Exclude<TRelation[Key], undefined> extends Array<infer U> | infer U
-			? (keyof U)[]
+			? (keyof {
+					[K in keyof U & string as U[K] extends string
+						? `${K}${'' | Modifier}`
+						: K]: unknown
+				})[]
 			: never
+		// fields?: Exclude<TRelation[Key], undefined> extends Array<infer U> | infer U
+		// 	? (keyof U)[]
+		// 	: never
 		expand?: Exclude<TRelation[Key], undefined> extends
 			| Array<infer U extends TSchema[keyof TSchema]>
 			| infer U extends TSchema[keyof TSchema]
@@ -52,8 +69,11 @@ type ResponseType<
 	TRelation extends BaseRelation<TSchema>,
 	TOption extends Option<TSchema, TRelation>,
 	_Obj = TSchema[TOption['key']]
-> = TOption['fields'] extends Array<infer FieldKeys extends keyof _Obj>
-	? Pick<_Obj, FieldKeys> & ProcessExpandArray<TSchema, TRelation, TOption['expand']>
+	// > = TOption['fields'] extends Array<infer Fields extends keyof _Obj>
+> = TOption['fields'] extends Array<infer U extends string>
+	? RemoveModifier<U> extends infer Fields extends keyof _Obj
+		? Pick<_Obj, Fields> & ProcessExpandArray<TSchema, TRelation, TOption['expand']>
+		: never
 	: _Obj & ProcessExpandArray<TSchema, TRelation, TOption['expand']>
 
 // check if all items in "expand" array are optional
@@ -117,11 +137,13 @@ type ProcessSingleExpand<
 	_IsToMany extends boolean = Exclude<TRelation[TExpand['key']], undefined> extends Array<unknown>
 		? true
 		: false
-> = TExpand['fields'] extends Array<infer Fields extends keyof _Obj>
-	? HandleArray<
-			Pick<_Obj, Fields> & ProcessExpandArray<TSchema, TRelation, TExpand['expand']>,
-			_IsToMany
-		>
+> = TExpand['fields'] extends Array<infer U extends string>
+	? RemoveModifier<U> extends infer Fields extends keyof _Obj
+		? HandleArray<
+				Pick<_Obj, Fields> & ProcessExpandArray<TSchema, TRelation, TExpand['expand']>,
+				_IsToMany
+			>
+		: never
 	: HandleArray<_Obj & ProcessExpandArray<TSchema, TRelation, TExpand['expand']>, _IsToMany>
 
 // Less "strict" version of Option so that we don't have to pass generics down to helper functions

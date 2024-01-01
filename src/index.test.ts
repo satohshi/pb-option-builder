@@ -37,12 +37,21 @@ type Schema = {
 type Relations = {
 	post: Post
 	user: User
-	tags: Array<Tag>
-	'posts(tags)': Array<Post>
-	'posts(user)': Array<Post>
-	'comments(post)': Array<Comment>
-	'comments(user)': Array<Comment>
+	tags?: Array<Tag>
+
+	'posts(tags)'?: Array<Post>
+	'posts(user)'?: Array<Post>
+	'comments(post)'?: Array<Comment>
+	'comments(user)'?: Array<Comment>
 }
+
+type AllOptional<TRelation, T extends { key: keyof TRelation; [key: PropertyKey]: unknown }[]> = {
+	[Obj in T[number] as Obj['key']]: undefined extends TRelation[Obj['key']] ? true : false
+} extends Record<PropertyKey, true>
+	? true
+	: false
+
+type test = AllOptional<Relations, [{ key: 'comments(post)' }, { key: 'tags' }]>
 
 describe('builder', () => {
 	const builder = initializeBuilder<Schema, Relations>()
@@ -85,11 +94,11 @@ describe('builder', () => {
 			expand: [{ key: 'comments(post)' }]
 		})
 		expect(optionObj1).toEqual({ expand: 'comments(post)' })
-		expectTypeOf(typeObj1).toEqualTypeOf<Post & { expand: { 'comments(post)': Comment[] } }>()
+		expectTypeOf(typeObj1).toEqualTypeOf<Post & { expand?: { 'comments(post)': Comment[] } }>()
 
 		const [optionObj2, typeObj2] = builder({ key: 'posts', expand: [{ key: 'tags' }] })
 		expect(optionObj2).toEqual({ expand: 'tags' })
-		expectTypeOf(typeObj2).toEqualTypeOf<Post & { expand: { tags: Tag[] } }>()
+		expectTypeOf(typeObj2).toEqualTypeOf<Post & { expand?: { tags: Tag[] } }>()
 	})
 
 	it('handles fields with single expand correctly', () => {
@@ -105,7 +114,7 @@ describe('builder', () => {
 		})
 		expectTypeOf(typeObj1).toEqualTypeOf<
 			Pick<Post, 'id' | 'title'> & {
-				expand: { 'comments(post)': Comment[] }
+				expand?: { 'comments(post)': Comment[] }
 			}
 		>()
 
@@ -120,7 +129,7 @@ describe('builder', () => {
 		})
 		expectTypeOf(typeObj2).toEqualTypeOf<
 			Post & {
-				expand: { 'comments(post)': Pick<Comment, 'id' | 'message'>[] }
+				expand?: { 'comments(post)': Pick<Comment, 'id' | 'message'>[] }
 			}
 		>()
 
@@ -136,7 +145,7 @@ describe('builder', () => {
 		})
 		expectTypeOf(typeObj3).toEqualTypeOf<
 			Pick<Post, 'id' | 'title'> & {
-				expand: { 'comments(post)': Pick<Comment, 'id' | 'message'>[] }
+				expand?: { 'comments(post)': Pick<Comment, 'id' | 'message'>[] }
 			}
 		>()
 	})
@@ -149,9 +158,7 @@ describe('builder', () => {
 		expect(optionObj1).toEqual({ expand: 'comments(post),tags' })
 		expectTypeOf(typeObj1).toEqualTypeOf<
 			Post & {
-				expand: { 'comments(post)': Comment[] }
-			} & {
-				expand: { tags: Tag[] }
+				expand?: { 'comments(post)'?: Comment[]; tags?: Tag[] }
 			}
 		>()
 	})
@@ -169,9 +176,7 @@ describe('builder', () => {
 		})
 		expectTypeOf(typeObj1).toEqualTypeOf<
 			Pick<Post, 'id' | 'title'> & {
-				expand: { 'comments(post)': Comment[] }
-			} & {
-				expand: { tags: Tag[] }
+				expand?: { 'comments(post)'?: Comment[]; tags?: Tag[] }
 			}
 		>()
 
@@ -186,9 +191,7 @@ describe('builder', () => {
 		})
 		expectTypeOf(typeObj2).toEqualTypeOf<
 			Post & {
-				expand: { 'comments(post)': Pick<Comment, 'id' | 'message'>[] }
-			} & {
-				expand: { tags: Tag[] }
+				expand?: { 'comments(post)'?: Pick<Comment, 'id' | 'message'>[]; tags?: Tag[] }
 			}
 		>()
 
@@ -206,9 +209,10 @@ describe('builder', () => {
 		})
 		expectTypeOf(typeObj3).toEqualTypeOf<
 			Post & {
-				expand: { 'comments(post)': Pick<Comment, 'id' | 'message'>[] }
-			} & {
-				expand: { tags: Pick<Tag, 'id' | 'name'>[] }
+				expand?: {
+					'comments(post)'?: Pick<Comment, 'id' | 'message'>[]
+					tags?: Pick<Tag, 'id' | 'name'>[]
+				}
 			}
 		>()
 
@@ -227,9 +231,32 @@ describe('builder', () => {
 		})
 		expectTypeOf(typeObj4).toEqualTypeOf<
 			Pick<Post, 'id' | 'title'> & {
-				expand: { 'comments(post)': Pick<Comment, 'id' | 'message'>[] }
-			} & {
-				expand: { tags: Pick<Tag, 'id' | 'name'>[] }
+				expand?: {
+					'comments(post)'?: Pick<Comment, 'id' | 'message'>[]
+					tags?: Pick<Tag, 'id' | 'name'>[]
+				}
+			}
+		>()
+
+		// One expand field is required, the other is optional
+		const [optionObj5, typeObj5] = builder({
+			key: 'posts',
+			fields: ['id', 'title'],
+			expand: [
+				{ key: 'comments(post)', fields: ['id', 'message'] },
+				{ key: 'user', fields: ['id', 'name'] }
+			]
+		})
+		expect(optionObj5).toEqual({
+			expand: 'comments(post),user',
+			fields: 'id,title,expand.comments(post).id,expand.comments(post).message,expand.user.id,expand.user.name'
+		})
+		expectTypeOf(typeObj5).toEqualTypeOf<
+			Pick<Post, 'id' | 'title'> & {
+				expand: {
+					'comments(post)'?: Pick<Comment, 'id' | 'message'>[]
+					user: Pick<User, 'id' | 'name'>
+				}
 			}
 		>()
 	})
@@ -244,11 +271,10 @@ describe('builder', () => {
 		})
 		expectTypeOf(typeObj1).toEqualTypeOf<
 			Post & {
-				expand: {
-					'comments(post)': (Comment & { expand: { user: User } })[]
+				expand?: {
+					'comments(post)'?: (Comment & { expand: { user: User } })[]
+					tags?: Tag[]
 				}
-			} & {
-				expand: { tags: Tag[] }
 			}
 		>()
 
@@ -266,18 +292,15 @@ describe('builder', () => {
 		})
 		expectTypeOf(typeObj2).toEqualTypeOf<
 			User & {
-				expand: {
+				expand?: {
 					'posts(user)': (Post & {
-						expand: {
-							'comments(post)': (Comment & {
+						expand?: {
+							'comments(post)'?: (Comment & {
 								expand: {
 									user: User
 								}
 							})[]
-						}
-					} & {
-						expand: {
-							tags: Tag[]
+							tags?: Tag[]
 						}
 					})[]
 				}
@@ -298,10 +321,9 @@ describe('builder', () => {
 		})
 		expectTypeOf(typeObj1).toEqualTypeOf<
 			Pick<Post, 'id' | 'title'> & {
-				expand: { tags: Tag[] }
-			} & {
-				expand: {
-					'comments(post)': (Comment & { expand: { user: User } })[]
+				expand?: {
+					tags?: Tag[]
+					'comments(post)'?: (Comment & { expand: { user: User } })[]
 				}
 			}
 		>()
@@ -318,6 +340,18 @@ describe('builder', () => {
 			expand: 'tags,comments(post).user',
 			fields: '*,expand.tags,expand.comments(post).*,expand.comments(post).expand.user.id,expand.comments(post).expand.user.name'
 		})
+		expectTypeOf(typeObj2).toEqualTypeOf<
+			Post & {
+				expand?: {
+					tags?: Tag[]
+					'comments(post)'?: (Comment & {
+						expand: {
+							user: Pick<User, 'id' | 'name'>
+						}
+					})[]
+				}
+			}
+		>()
 
 		// fields specified in all expands, but not at top level
 		const [optionObj3, typeObj3] = builder({
@@ -337,10 +371,9 @@ describe('builder', () => {
 		})
 		expectTypeOf(typeObj3).toEqualTypeOf<
 			Post & {
-				expand: { tags: Pick<Tag, 'id' | 'name'>[] }
-			} & {
-				expand: {
-					'comments(post)': (Pick<Comment, 'id' | 'message'> & {
+				expand?: {
+					tags?: Pick<Tag, 'id' | 'name'>[]
+					'comments(post)'?: (Pick<Comment, 'id' | 'message'> & {
 						expand: {
 							user: Pick<User, 'id' | 'name'>
 						}
@@ -368,10 +401,9 @@ describe('builder', () => {
 		})
 		expectTypeOf(typeObj4).toEqualTypeOf<
 			Pick<Post, 'id' | 'title'> & {
-				expand: { tags: Pick<Tag, 'id' | 'name'>[] }
-			} & {
-				expand: {
-					'comments(post)': (Pick<Comment, 'id' | 'message'> & {
+				expand?: {
+					tags?: Pick<Tag, 'id' | 'name'>[]
+					'comments(post)'?: (Pick<Comment, 'id' | 'message'> & {
 						expand: {
 							user: Pick<User, 'id' | 'name'>
 						}
@@ -395,10 +427,9 @@ describe('builder', () => {
 		})
 		expectTypeOf(typeObj5).toEqualTypeOf<
 			Pick<Post, 'id' | 'title'> & {
-				expand: { tags: Pick<Tag, 'id' | 'name'>[] }
-			} & {
-				expand: {
-					'comments(post)': (Pick<Comment, 'id' | 'message'> & {
+				expand?: {
+					tags?: Pick<Tag, 'id' | 'name'>[]
+					'comments(post)'?: (Pick<Comment, 'id' | 'message'> & {
 						expand: {
 							user: User
 						}
@@ -422,15 +453,38 @@ describe('builder', () => {
 		})
 		expectTypeOf(typeObj6).toEqualTypeOf<
 			Pick<Post, 'id' | 'title'> & {
-				expand: { tags: Pick<Tag, 'id' | 'name'>[] }
-			} & {
-				expand: {
-					'comments(post)': (Comment & {
+				expand?: {
+					tags?: Pick<Tag, 'id' | 'name'>[]
+					'comments(post)'?: (Comment & {
 						expand: {
 							user: Pick<User, 'id' | 'name'>
 						}
 					})[]
 				}
+			}
+		>()
+	})
+
+	it('ignores modifiers like :excerpt', () => {
+		const [optionObj, typeObj] = builder({
+			key: 'posts',
+			fields: ['id', 'title:excerpt(200, true)']
+		})
+		expect(optionObj).toEqual({ fields: 'id,title' })
+		expectTypeOf(typeObj).toEqualTypeOf<Pick<Post, 'id' | 'title'>>()
+
+		const [optionObj2, typeObj2] = builder({
+			key: 'posts',
+			fields: ['id', 'title'],
+			expand: [{ key: 'comments(post)', fields: ['id', 'message:excerpt(200)'] }]
+		})
+		expect(optionObj2).toEqual({
+			expand: 'comments(post)',
+			fields: 'id,title,expand.comments(post).id,expand.comments(post).message'
+		})
+		expectTypeOf(typeObj2).toEqualTypeOf<
+			Pick<Post, 'id' | 'title'> & {
+				expand?: { 'comments(post)': Pick<Comment, 'id' | 'message'>[] }
 			}
 		>()
 	})
