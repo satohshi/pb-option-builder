@@ -22,7 +22,7 @@ This option builder allows you to write it like this instead:
     ]
 }
 ```
-It comes with autocomplete for `key`, `fields` and `expand` options, and also provides you a way to **type the response**.
+It comes with autocomplete for `key`, `fields`, `expand` and `sort` options, and also provides you a way to **type the response**.
 
 
 ## Installation
@@ -129,7 +129,7 @@ const result = await pb.collection('posts').getOne<typeof typeObj>(optionsObj);
 It's a bit hacky and not very pretty, but does the job.
 
 
-### Parameter type for `optionBuilder`:
+### Parameter type for the option builder:
 ```ts
 {
     // Table name as defined in "Schema"
@@ -162,7 +162,7 @@ ExpandItem {
 You might run into a situation where you have a component that requires a specific set of fields to be passed to it, and it makes sense to fetch the item directly in one route, but in another, it makes sense to do so through `expand`.
 
 
-Because of the way the argument for the option builder is structured, the `fields` array is portable.  
+Because of the way the parameter for the option builder is structured, the `fields` array is portable.  
 You can define the fields in one place, and use it either at the top level, or in the `expand` option **as is** .
 
 Example:
@@ -207,7 +207,7 @@ When the post doesn't have any comments, the SDK (or PocketBase itself rather) r
 
 ```ts
 {
-    id: "123",
+    id: "1",
     title: "Lorem ipsum",
     tags: ["lorem", "ipsum"],
     created: "2024-01-01T00:00:00.000Z",

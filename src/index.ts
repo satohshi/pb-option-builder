@@ -8,7 +8,7 @@ type Option<TSchema extends BaseSchema, TRelation extends BaseRelation<TSchema>>
 		key: Key
 		fields?: (keyof TSchema[Key] & string)[]
 		expand?: Expand<TSchema, TRelation, Related<TSchema, TRelation, TSchema[Key]>>[]
-		sort?: string
+		sort?: '@random' | `${'' | '+' | '-'}${keyof TSchema[Key] & string}`
 		filter?: string
 		requestKey?: string
 	}
@@ -105,7 +105,7 @@ type ProcessExpandArray<
 			}
 	: unknown // "never" doesn't work here because "any & never" is never
 
-type HandleArray<T, U extends boolean> = U extends true ? Array<T> : T
+type HandleArray<T, IsArray extends boolean> = IsArray extends true ? Array<T> : T
 
 type ProcessSingleExpand<
 	TSchema extends BaseSchema,
