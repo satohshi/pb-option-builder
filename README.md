@@ -107,6 +107,8 @@ const [optionsObj, typeObj] = optionBuilder({
         },
         {
             key: 'comments(post)',
+            // you can use :excerpt modifier for string fields
+            fields: ["message:excerpt(20)"]
             // nesting "expand" is supported
             expand: [{ key: 'user', fields: ['name'] }]
         }
