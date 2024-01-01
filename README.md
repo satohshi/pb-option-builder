@@ -9,7 +9,7 @@ This is how you would normally write options for the PocketBase SDK:
     fields: 'id,title,expand.comments(post).user,expand.comments(post).message,expand.tags.id,expand.tags.name'
 }
 ```
-Writing options manually like this is very error-prone and hard to read/maintain.
+Writing options manually like this is very error-prone, and makes the code very hard to read/maintain.
 
 This option builder allows you to write it like this instead:
 ```js
@@ -80,8 +80,10 @@ type Relations = {
 
     // back-relations
     "posts(tags)": Array<Post>
-    "comments(post)": Array<Comment>
-    "comments(user)": Array<Comment>
+
+    // Add "?" modifier to annotate optional relation fields
+    "comments(post)"?: Array<Comment> // i.e. post might not have any comments
+    "comments(user)"?: Array<Comment> // i.e. user might not have any comments
 }
 ```
 
@@ -101,7 +103,7 @@ const [optionsObj, typeObj] = optionBuilder({
     expand: [
         {
             key: 'tags'
-            // returns all fields if it's not specified
+            // returns all fields if not specified
         },
         {
             key: 'comments(post)',
@@ -152,7 +154,6 @@ ExpandItem {
     fields?: // same as above
     expand?: // same as above
 }
-
 ```
 
 
@@ -199,6 +200,49 @@ const [optionsObj, typeObj] = optionBuilder({
 })
 ```
 
+
+### Handling of optional relation fields 
+Let's say you want to get a post with its comments using `expand`.  
+When the post doesn't have any comments, the SDK (or PocketBase itself rather) returns:
+
+```ts
+{
+    id: "123",
+    title: "Lorem ipsum",
+    tags: ["lorem", "ipsum"],
+    created: "2024-01-01T00:00:00.000Z",
+    updated: "2024-01-01T00:00:00.000Z"
+}
+```
+
+The response won't even have
+
+```ts
+{
+    expand: undefined
+}
+// or
+{
+    expand: {
+        "comments(post)": []
+    }
+}
+```
+
+So if all the specified expands are for optional relation fields, the option builder will add `?` modifier to the expand field itself.  
+i.e. the return type will be:
+
+```ts
+Post & {
+    expand?: {
+        "comments(post)": Comment[]
+    }
+}
+```
+
+If you don't need this much of type-safety and find this behaviour annoying, you can opt out by not adding `?` when defining `Relation`.
+
+
 ## Caveat:
 In order for back-relations to work, you need to have the forward-relations defined as well.
 ```ts
@@ -220,6 +264,7 @@ const [optionsObj, typeObj] = optionBuilder({
     ]
 })
 ```
+
 
 ## Why not just integrate this into the SDK?
 - This way, you can start using this in existing projects without having to change anything. I think most of the time, you don't need to pass in any options to the SDK, so installing a new custom SDK for a very few instances where you need to seems like an overkill.
