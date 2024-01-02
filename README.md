@@ -108,13 +108,12 @@ const [optionsObj, typeObj] = optionBuilder({
         {
             key: 'comments(post)',
             // you can use :excerpt modifier for string fields
-            fields: ["message:excerpt(20)"]
+            fields: ["message:excerpt(20)"],
             // nesting "expand" is supported
             expand: [{ key: 'user', fields: ['name'] }]
         }
     ]
 })
-
 
 const result = await pb.collection('posts').getOne(optionsObj);
 ```
@@ -126,6 +125,21 @@ You can use it to type the response:
 
 ```ts
 const result = await pb.collection('posts').getOne<typeof typeObj>(optionsObj);
+```
+
+Now `result` will be correctly typed as:
+
+```ts
+Pick<Post, "tags" | "id" | "title"> & {
+    expand: {
+        tags: Array<Tag>
+        'comments(post)'?: (Pick<Comment, "message"> & {
+            expand: {
+                user: Pick<User, "name">
+            }
+        })[]
+    }
+}
 ```
 
 It's a bit hacky and not very pretty, but does the job.
@@ -217,22 +231,19 @@ When the post doesn't have any comments, the SDK (or PocketBase itself rather) r
 }
 ```
 
-The response won't even have
+The response will not have
 
 ```ts
-{
-    expand: undefined
-}
-// or
 {
     expand: {
         "comments(post)": []
     }
 }
+// or not even { expand: undefined } for that matter
 ```
+So you will get runtime error if you try to access `post.expand["comments(post)"]` on a post with no comments.
 
-So if all the specified expands are for optional relation fields, the option builder will add `?` modifier to the expand field itself.  
-i.e. the return type will be:
+To handle cases like this, the option builder will add `?` modifier to the expand field itself if all the specified expands are for optional relation fields.  
 
 ```ts
 Post & {
@@ -240,9 +251,25 @@ Post & {
         "comments(post)": Comment[]
     }
 }
+// or with multiple optional relations
+Post & {
+    expand?: {
+        "foo"?: Foo
+        "comments(post)"?: Comment[]
+    }
+}
 ```
+If you expand it along with fields that are not optional like `tag`, `expand` will be there regardless of whether the post has comments or not. 
 
-If you don't need this much of type-safety and find this behaviour annoying, you can opt out by not adding `?` when defining `Relation`.
+So the respose will be typed as:
+```ts
+Post & {
+    expand: {
+        tag: Array<Tag>
+        "comments(post)"?: Comment[]
+    }
+}
+```
 
 
 ## Caveat:
