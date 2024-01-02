@@ -45,14 +45,6 @@ type Relations = {
 	'comments(user)'?: Array<Comment>
 }
 
-type AllOptional<TRelation, T extends { key: keyof TRelation; [key: PropertyKey]: unknown }[]> = {
-	[Obj in T[number] as Obj['key']]: undefined extends TRelation[Obj['key']] ? true : false
-} extends Record<PropertyKey, true>
-	? true
-	: false
-
-type test = AllOptional<Relations, [{ key: 'comments(post)' }, { key: 'tags' }]>
-
 describe('builder', () => {
 	const builder = initializeBuilder<Schema, Relations>()
 
@@ -77,6 +69,7 @@ describe('builder', () => {
 
 	it('passes "requestKey" to the SDK as is', () => {
 		const [optionObj, typeObj] = builder({ key: 'posts', requestKey: 'a' })
+		console.log(optionObj)
 		expect(optionObj).toEqual({ requestKey: 'a' })
 		expectTypeOf(typeObj).toEqualTypeOf<Post>()
 	})
@@ -470,7 +463,7 @@ describe('builder', () => {
 			key: 'posts',
 			fields: ['id', 'title:excerpt(200, true)']
 		})
-		expect(optionObj).toEqual({ fields: 'id,title' })
+		expect(optionObj).toEqual({ fields: 'id,title:excerpt(200, true)' })
 		expectTypeOf(typeObj).toEqualTypeOf<Pick<Post, 'id' | 'title'>>()
 
 		const [optionObj2, typeObj2] = builder({
@@ -480,7 +473,7 @@ describe('builder', () => {
 		})
 		expect(optionObj2).toEqual({
 			expand: 'comments(post)',
-			fields: 'id,title,expand.comments(post).id,expand.comments(post).message'
+			fields: 'id,title,expand.comments(post).id,expand.comments(post).message:excerpt(200)'
 		})
 		expectTypeOf(typeObj2).toEqualTypeOf<
 			Pick<Post, 'id' | 'title'> & {
