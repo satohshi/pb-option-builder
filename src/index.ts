@@ -18,6 +18,7 @@ type Option<TSchema extends BaseSchema, TRelation extends BaseRelation<TSchema>>
 				: K]: unknown
 		})[]
 		expand?: Expand<TSchema, TRelation, Related<TSchema, TRelation, TSchema[Key]>>[]
+
 		sort?: '@random' | `${'' | '+' | '-'}${keyof TSchema[Key] & string}`
 		filter?: string
 		requestKey?: string
@@ -31,21 +32,37 @@ type Expand<
 > = {
 	[Key in TKey]: {
 		key: Key
-		fields?: Exclude<TRelation[Key], undefined> extends Array<infer U> | infer U
+		fields?: Required<TRelation>[Key] extends Array<infer U>
 			? (keyof {
 					[K in keyof U & string as U[K] extends string
 						? `${K}${'' | Modifier}`
 						: K]: unknown
 				})[]
-			: never
-		// fields?: Exclude<TRelation[Key], undefined> extends Array<infer U> | infer U
-		// 	? (keyof U)[]
-		// 	: never
-		expand?: Exclude<TRelation[Key], undefined> extends
-			| Array<infer U extends TSchema[keyof TSchema]>
-			| infer U extends TSchema[keyof TSchema]
+			: (keyof {
+					[K in keyof TRelation[Key] & string as TRelation[Key][K] extends string
+						? `${K}${'' | Modifier}`
+						: K]: unknown
+				})[]
+		expand?: Required<TRelation>[Key] extends Array<infer U extends TSchema[keyof TSchema]>
 			? Expand<TSchema, TRelation, Related<TSchema, TRelation, U>>[]
-			: never
+			: Required<TRelation>[Key] extends infer U extends TSchema[keyof TSchema]
+				? Expand<TSchema, TRelation, Related<TSchema, TRelation, U>>[]
+				: never
+
+		// the following is correct syntax and passes tests, but fails at build step
+		// infer within union doesn't seem to work for whatever reason
+		// fields?: Required<TRelation>[Key] extends Array<infer U> | infer U
+		// 	? (keyof {
+		// 			[K in keyof U & string as U[K] extends string
+		// 				? `${K}${'' | Modifier}`
+		// 				: K]: unknown
+		// 		})[]
+		// 	: never
+		// expand?: Required<TRelation>[Key] extends
+		// 	| Array<infer U extends TSchema[keyof TSchema]>
+		// 	| infer U extends TSchema[keyof TSchema]
+		// 	? Expand<TSchema, TRelation, Related<TSchema, TRelation, U>>[]
+		// 	: never
 	}
 }[TKey]
 
@@ -60,7 +77,7 @@ type BackRelation<TSchema, TRelation, T extends TSchema[keyof TSchema]> = keyof 
 				? Key
 				: never
 			: never
-		: never]: {}
+		: never]: unknown
 } &
 	keyof TRelation
 
@@ -69,7 +86,6 @@ type ResponseType<
 	TRelation extends BaseRelation<TSchema>,
 	TOption extends Option<TSchema, TRelation>,
 	_Obj = TSchema[TOption['key']]
-	// > = TOption['fields'] extends Array<infer Fields extends keyof _Obj>
 > = TOption['fields'] extends Array<infer U extends string>
 	? RemoveModifier<U> extends infer Fields extends keyof _Obj
 		? Pick<_Obj, Fields> & ProcessExpandArray<TSchema, TRelation, TOption['expand']>
@@ -131,10 +147,8 @@ type ProcessSingleExpand<
 	TSchema extends BaseSchema,
 	TRelation extends BaseRelation<TSchema>,
 	TExpand extends Expand<TSchema, TRelation, keyof TRelation>,
-	_Obj = Exclude<TRelation[TExpand['key']], undefined> extends Array<infer U> | infer U
-		? U
-		: never,
-	_IsToMany extends boolean = Exclude<TRelation[TExpand['key']], undefined> extends Array<unknown>
+	_Obj = Required<TRelation>[TExpand['key']] extends Array<infer U> | infer U ? U : never,
+	_IsToMany extends boolean = Required<TRelation>[TExpand['key']] extends Array<unknown>
 		? true
 		: false
 > = TExpand['fields'] extends Array<infer U extends string>
