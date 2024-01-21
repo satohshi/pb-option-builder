@@ -69,7 +69,6 @@ describe('builder', () => {
 
 	it('passes "requestKey" to the SDK as is', () => {
 		const [optionObj, typeObj] = builder({ key: 'posts', requestKey: 'a' })
-		console.log(optionObj)
 		expect(optionObj).toEqual({ requestKey: 'a' })
 		expectTypeOf(typeObj).toEqualTypeOf<Post>()
 	})
