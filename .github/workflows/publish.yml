@@ -4,8 +4,10 @@ on:
     push:
         branches:
             - main
-        paths:
-            - 'src/**'
+        paths-ignore:
+            - 'REAdME.md'
+            - 'LICENSE'
+            - '.gitignore'
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
