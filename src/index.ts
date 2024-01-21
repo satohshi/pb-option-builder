@@ -1,20 +1,26 @@
-type PocketBaseOption = { fields?: string; expand?: string; sort?: string; filter?: string }
+type PocketBaseOption = {
+	fields?: string
+	expand?: string
+	sort?: string
+	filter?: string
+	requestKey?: string
+}
 
 type BaseSchema = Record<string, unknown>
 type BaseRelation<T extends BaseSchema> = Record<string, T[keyof T] | Array<T[keyof T]>>
 
-// prettier-ignore
 type WithEllipsis = '' | `${',' | ', '}${boolean}`
 type Modifier = `:excerpt(${number}${WithEllipsis})`
 
-type RemoveModifier<T extends string> = T extends `${infer U}:${infer V}` ? U : T
+type RemoveModifier<T extends string> = T extends `${infer U}:${string}` ? U : T
+type FieldsArrayToUnion<T> = T extends Array<string> ? RemoveModifier<T[number]> : T
 
 type Option<TSchema extends BaseSchema, TRelation extends BaseRelation<TSchema>> = {
 	[Key in keyof TSchema]: {
 		key: Key
 		fields?: (keyof {
-			[K in keyof TSchema[Key] & string as TSchema[Key][K] extends string
-				? `${K}${'' | Modifier}`
+			[K in keyof TSchema[Key] as TSchema[Key][K] extends string
+				? `${K & string}${'' | Modifier}`
 				: K]: unknown
 		})[]
 		expand?: Expand<TSchema, TRelation, Related<TSchema, TRelation, TSchema[Key]>>[]
@@ -32,33 +38,22 @@ type Expand<
 > = {
 	[Key in TKey]: {
 		key: Key
-		fields?: Required<TRelation>[Key] extends Array<infer U>
+		fields?: NonNullable<TRelation[Key]> extends Array<infer U> | infer U
 			? (keyof {
-					[K in keyof U & string as U[K] extends string
-						? `${K}${'' | Modifier}`
+					[K in keyof U as U[K] extends string
+						? `${K & string}${'' | Modifier}`
 						: K]: unknown
 				})[]
-			: (keyof {
-					[K in keyof TRelation[Key] & string as TRelation[Key][K] extends string
-						? `${K}${'' | Modifier}`
-						: K]: unknown
-				})[]
-		expand?: Required<TRelation>[Key] extends Array<infer U extends TSchema[keyof TSchema]>
+			: never
+		expand?: NonNullable<TRelation[Key]> extends Array<infer U extends TSchema[keyof TSchema]>
 			? Expand<TSchema, TRelation, Related<TSchema, TRelation, U>>[]
-			: Required<TRelation>[Key] extends infer U extends TSchema[keyof TSchema]
+			: NonNullable<TRelation[Key]> extends infer U extends TSchema[keyof TSchema]
 				? Expand<TSchema, TRelation, Related<TSchema, TRelation, U>>[]
 				: never
 
 		// the following is correct syntax and passes tests, but fails at build step
 		// infer within union doesn't seem to work for whatever reason
-		// fields?: Required<TRelation>[Key] extends Array<infer U> | infer U
-		// 	? (keyof {
-		// 			[K in keyof U & string as U[K] extends string
-		// 				? `${K}${'' | Modifier}`
-		// 				: K]: unknown
-		// 		})[]
-		// 	: never
-		// expand?: Required<TRelation>[Key] extends
+		// expand?: NonNullable<TRelation[Key]> extends
 		// 	| Array<infer U extends TSchema[keyof TSchema]>
 		// 	| infer U extends TSchema[keyof TSchema]
 		// 	? Expand<TSchema, TRelation, Related<TSchema, TRelation, U>>[]
@@ -86,11 +81,10 @@ type ResponseType<
 	TRelation extends BaseRelation<TSchema>,
 	TOption extends Option<TSchema, TRelation>,
 	_Obj = TSchema[TOption['key']]
-> = TOption['fields'] extends Array<infer U extends string>
-	? RemoveModifier<U> extends infer Fields extends keyof _Obj
-		? Pick<_Obj, Fields> & ProcessExpandArray<TSchema, TRelation, TOption['expand']>
-		: never
-	: _Obj & ProcessExpandArray<TSchema, TRelation, TOption['expand']>
+> = (FieldsArrayToUnion<TOption['fields']> extends infer Fields extends keyof _Obj
+	? Pick<_Obj, Fields>
+	: _Obj) &
+	ProcessExpandArray<TSchema, TRelation, TOption['expand']>
 
 // check if all items in "expand" array are optional
 type AllOptional<TRelation, T extends { key: keyof TRelation; [key: PropertyKey]: unknown }[]> = {
@@ -125,7 +119,7 @@ type ProcessExpandArray<
 						}
 			}
 		: {
-				// if there's expand item that we know for sure isn't undefined, we don't need to +? on "expand"
+				// if there's expand item that we know for sure isn't undefined, we don't need to +? on "expand" itself
 				expand: {
 					// AFAIK, there's no way to add "?" modifier conditionally, so we have to use keys from TRelation
 					[Key in keyof TRelation as Key extends TExpandArr[number]['key']
@@ -147,18 +141,14 @@ type ProcessSingleExpand<
 	TSchema extends BaseSchema,
 	TRelation extends BaseRelation<TSchema>,
 	TExpand extends Expand<TSchema, TRelation, keyof TRelation>,
-	_Obj = Required<TRelation>[TExpand['key']] extends Array<infer U> | infer U ? U : never,
-	_IsToMany extends boolean = Required<TRelation>[TExpand['key']] extends Array<unknown>
-		? true
-		: false
-> = TExpand['fields'] extends Array<infer U extends string>
-	? RemoveModifier<U> extends infer Fields extends keyof _Obj
-		? HandleArray<
-				Pick<_Obj, Fields> & ProcessExpandArray<TSchema, TRelation, TExpand['expand']>,
-				_IsToMany
-			>
-		: never
-	: HandleArray<_Obj & ProcessExpandArray<TSchema, TRelation, TExpand['expand']>, _IsToMany>
+	_Obj = NonNullable<TRelation[TExpand['key']]> extends Array<infer U> | infer U ? U : never
+> = HandleArray<
+	(FieldsArrayToUnion<TExpand['fields']> extends infer Fields extends keyof _Obj
+		? Pick<_Obj, Fields>
+		: _Obj) &
+		ProcessExpandArray<TSchema, TRelation, TExpand['expand']>,
+	NonNullable<TRelation[TExpand['key']]> extends Array<unknown> ? true : false
+>
 
 // Less "strict" version of Option so that we don't have to pass generics down to helper functions
 type HelperArg = { key: string; fields?: string[]; expand?: HelperArg[] }
@@ -180,7 +170,7 @@ const getFields = (option: HelperArg, baseKey = ''): string => {
 		if (JSON.stringify(expand).includes('"fields"')) {
 			const expandFields = expand.map((exp) => {
 				const fieldsAtDeeperLevel = getFields(exp, `${baseKey}expand.${exp.key}.`)
-				return `${fieldsAtDeeperLevel}`
+				return fieldsAtDeeperLevel
 			})
 			return `${fieldsAtThisLevel},${expandFields.join(',')}`
 		}
@@ -230,5 +220,5 @@ export const initializeBuilder =
 			}
 		}
 
-		return [res, {} as ResponseType<TSchema, TRelations, T>]
+		return [res, {} as any]
 	}
