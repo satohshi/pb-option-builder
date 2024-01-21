@@ -23,7 +23,8 @@
 	],
 	"scripts": {
 		"build": "tsup src/index.ts --format cjs,esm --dts",
-		"test": "vitest",
+		"dev": "vitest",
+		"test": "vitest run",
 		"lint": "tsc",
 		"release": "changeset publish"
 	},
