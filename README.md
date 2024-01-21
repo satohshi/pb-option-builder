@@ -185,7 +185,7 @@ Example:
 
 ```ts
 // CommentBlock.svelte
-export const commentFields = ["user", "message"] satisfies keyof Comment
+export const commentFields = ["user", "message"] satisfies Array<keyof Comment>
 ```
 
 ```ts
@@ -243,7 +243,7 @@ The response will not have
 ```
 So you will get runtime error if you try to access `post.expand["comments(post)"]` on a post with no comments.
 
-To handle cases like this, the option builder will add `?` modifier to the expand field itself if all the specified expands are for optional relation fields.  
+To handle cases like this, the option builder will add `?` modifier to the `expand` field itself if all the specified expands are for optional relation fields.  
 
 ```ts
 Post & {
