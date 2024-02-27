@@ -1,5 +1,11 @@
 # pb-option-builder
 
+## 0.1.0
+
+### Minor Changes
+
+- 3c3405f: added support for new back relation syntax
+
 ## 0.0.2
 
 ### Patch Changes
