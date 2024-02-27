@@ -1,4 +1,4 @@
-type PocketBaseOption = {
+interface PocketBaseOption {
 	fields?: string
 	expand?: string
 	sort?: string
@@ -18,12 +18,14 @@ type FieldsArrayToUnion<T> = T extends Array<string> ? RemoveModifier<T[number]>
 type Option<TSchema extends BaseSchema, TRelation extends BaseRelation<TSchema>> = {
 	[Key in keyof TSchema]: {
 		key: Key
-		fields?: (keyof {
-			[K in keyof TSchema[Key] as TSchema[Key][K] extends string
-				? `${K & string}${'' | Modifier}`
-				: K]: unknown
-		})[]
-		expand?: Expand<TSchema, TRelation, Related<TSchema, TRelation, TSchema[Key]>>[]
+		fields?: Array<
+			keyof {
+				[K in keyof TSchema[Key] as TSchema[Key][K] extends string
+					? `${K & string}${'' | Modifier}`
+					: K]: unknown
+			}
+		>
+		expand?: Array<Expand<TSchema, TRelation, Related<TSchema, TRelation, TSchema[Key]>>>
 
 		sort?: '@random' | `${'' | '+' | '-'}${keyof TSchema[Key] & string}`
 		filter?: string
@@ -39,24 +41,23 @@ type Expand<
 	[Key in TKey]: {
 		key: Key
 		fields?: NonNullable<TRelation[Key]> extends Array<infer U> | infer U
-			? (keyof {
-					[K in keyof U as U[K] extends string
-						? `${K & string}${'' | Modifier}`
-						: K]: unknown
-				})[]
+			? Array<
+					{
+						[K in keyof U]: U[K] extends string ? `${K & string}${'' | Modifier}` : K
+					}[keyof U]
+				>
 			: never
 		expand?: NonNullable<TRelation[Key]> extends Array<infer U extends TSchema[keyof TSchema]>
-			? Expand<TSchema, TRelation, Related<TSchema, TRelation, U>>[]
+			? Array<Expand<TSchema, TRelation, Related<TSchema, TRelation, U>>>
 			: NonNullable<TRelation[Key]> extends infer U extends TSchema[keyof TSchema]
-				? Expand<TSchema, TRelation, Related<TSchema, TRelation, U>>[]
+				? Array<Expand<TSchema, TRelation, Related<TSchema, TRelation, U>>>
 				: never
 
-		// the following is correct syntax and passes tests, but fails at build step
-		// infer within union doesn't seem to work for whatever reason
+		// Build fails with this simpler syntax due to a bug in esbuild (fixed in v0.19.12 but dependency is not updated yet in tsup and vitest)
 		// expand?: NonNullable<TRelation[Key]> extends
 		// 	| Array<infer U extends TSchema[keyof TSchema]>
 		// 	| infer U extends TSchema[keyof TSchema]
-		// 	? Expand<TSchema, TRelation, Related<TSchema, TRelation, U>>[]
+		// 	? Array<Expand<TSchema, TRelation, Related<TSchema, TRelation, U>>>
 		// 	: never
 	}
 }[TKey]
@@ -87,7 +88,7 @@ type ResponseType<
 	ProcessExpandArray<TSchema, TRelation, TOption['expand']>
 
 // check if all items in "expand" array are optional
-type AllOptional<TRelation, T extends { key: keyof TRelation; [key: PropertyKey]: unknown }[]> = {
+type AllOptional<TRelation, T extends Array<{ key: keyof TRelation }>> = {
 	[Obj in T[number] as Obj['key']]: undefined extends TRelation[Obj['key']] ? true : false
 } extends Record<PropertyKey, true>
 	? true
