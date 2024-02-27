@@ -27,7 +27,7 @@ type Option<TSchema extends BaseSchema, TRelation extends BaseRelation<TSchema>>
 		>
 		expand?: Array<Expand<TSchema, TRelation, Related<TSchema, TRelation, TSchema[Key]>>>
 
-		sort?: '@random' | `${'' | '+' | '-'}${keyof TSchema[Key] & string}`
+		sort?: '@random' | `${'' | '-'}${keyof TSchema[Key] & string}` | (string & {})
 		filter?: string
 		requestKey?: string
 	}
@@ -67,7 +67,7 @@ type Related<TSchema, TRelation, T extends TSchema[keyof TSchema]> =
 	| BackRelation<TSchema, TRelation, T>
 
 type BackRelation<TSchema, TRelation, T extends TSchema[keyof TSchema]> = keyof {
-	[Key in keyof TRelation as Key extends `${string}(${infer U})`
+	[Key in keyof TRelation as Key extends `${string}(${infer U})` | `${string}_via_${infer U}`
 		? U extends keyof TRelation
 			? TRelation[U] extends T
 				? Key

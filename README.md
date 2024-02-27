@@ -5,8 +5,8 @@ Option builder for [PocketBase JavaScript SDK](https://github.com/pocketbase/js-
 This is how you would normally write options for the PocketBase SDK:
 ```js
 {
-    expand: 'comments(post),tags',
-    fields: 'id,title,expand.comments(post).user,expand.comments(post).message,expand.tags.id,expand.tags.name'
+    expand: 'comments_via_post,tags',
+    fields: 'id,title,expand.comments_via_post.user,expand.comments_via_post.message,expand.tags.id,expand.tags.name'
 }
 ```
 Writing options manually like this is very error-prone, and makes the code very hard to read/maintain.
@@ -17,12 +17,12 @@ This option builder allows you to write it like this instead:
     key: 'posts',
     fields: ['id', 'title'],
     expand: [
-        { key: 'comments(post)', fields: ['user', 'message'] },
+        { key: 'comments_via_post', fields: ['user', 'message'] },
         { key: 'tags', fields: ['id', 'name'] }
     ]
 }
 ```
-It comes with autocomplete for `key`, `fields`, `expand` and `sort` options, and also provides you a way to **type the response**.
+It comes with autocomplete for `key`, `fields`, `expand` and the basic `sort` options, and also provides you a way to **type the response**.
 
 
 ## Installation
@@ -79,11 +79,15 @@ type Relations = {
     tags: Array<Tag>
 
     // back-relations
-    "posts(tags)": Array<Post>
+    posts_via_tags: Array<Post>
+    // OR
+    "posts(tags)": Array<Post> // if you're using PB < 0.22.0
+    // the old syntax will be supported until PB hard-deprecates it or it gets too annoying to maintain for whatever reason
+
 
     // Add "?" modifier to annotate optional relation fields
-    "comments(post)"?: Array<Comment> // i.e. post might not have any comments
-    "comments(user)"?: Array<Comment> // i.e. user might not have any comments
+    comments_via_post?: Array<Comment> // i.e. post might not have any comments
+    comments_via_user?: Array<Comment> // i.e. user might not have any comments
 }
 ```
 
@@ -106,8 +110,8 @@ const [optionsObj, typeObj] = optionBuilder({
             // returns all fields if not specified
         },
         {
-            key: 'comments(post)',
-            // you can use :excerpt modifier for string fields
+            key: 'comments_via_post',
+            // you can use :excerpt modifier on string fields
             fields: ["message:excerpt(20)"],
             // nesting "expand" is supported
             expand: [{ key: 'user', fields: ['name'] }]
@@ -133,7 +137,7 @@ Now `result` will be correctly typed as:
 Pick<Post, "tags" | "id" | "title"> & {
     expand: {
         tags: Array<Tag>
-        'comments(post)'?: (Pick<Comment, "message"> & {
+        comments_via_post?: (Pick<Comment, "message"> & {
             expand: {
                 user: Pick<User, "name">
             }
@@ -208,7 +212,7 @@ const [optionsObj, typeObj] = optionBuilder({
     fields: ["id", "title", "tags"],
     expand: [
         {
-            key: "comments(post)",
+            key: comments_via_post,
             // or here. No need to alter the imported fields
             fields: commentFields
         }
@@ -236,26 +240,26 @@ The response will not have
 ```ts
 {
     expand: {
-        "comments(post)": []
+        comments_via_post: []
     }
 }
 // or not even { expand: undefined } for that matter
 ```
-So you will get runtime error if you try to access `post.expand["comments(post)"]` on a post with no comments.
+So you will get runtime error if you try to access `post.expand[comments_via_post]` on a post with no comments.
 
 To handle cases like this, the option builder will add `?` modifier to the `expand` field itself if all the specified expands are for optional relation fields.  
 
 ```ts
 Post & {
     expand?: {
-        "comments(post)": Comment[]
+        comments_via_post: Comment[]
     }
 }
 // or with multiple optional relations
 Post & {
     expand?: {
-        "foo"?: Foo
-        "comments(post)"?: Comment[]
+        foo?: Foo
+        comments_via_post?: Comment[]
     }
 }
 ```
@@ -266,7 +270,7 @@ So the respose will be typed as:
 Post & {
     expand: {
         tag: Array<Tag>
-        "comments(post)"?: Comment[]
+        comments_via_post?: Comment[]
     }
 }
 ```
@@ -277,7 +281,7 @@ In order for back-relations to work, you need to have the forward-relations defi
 ```ts
 type Relations = {
     // This alone is not enough
-    "comments(post)": Array<Comment>
+    comments_via_post: Array<Comment>
 
     // You need to have this defined as well
     post: Post
@@ -288,7 +292,7 @@ const [optionsObj, typeObj] = optionBuilder({
     expand: [
         {
             // Without "post: Post", TS will complain and you won't get autocomplete or typesafety
-            key: "comments(post)",
+            key: "comments_via_post",
         }
     ]
 })
