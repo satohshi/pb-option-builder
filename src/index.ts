@@ -69,7 +69,7 @@ type Related<TSchema, TRelation, T extends TSchema[keyof TSchema]> =
 type BackRelation<TSchema, TRelation, T extends TSchema[keyof TSchema]> = keyof {
 	[Key in keyof TRelation as Key extends `${string}(${infer U})` | `${string}_via_${infer U}`
 		? U extends keyof TRelation
-			? TRelation[U] extends T
+			? T extends TRelation[U]
 				? Key
 				: never
 			: never

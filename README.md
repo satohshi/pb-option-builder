@@ -72,8 +72,8 @@ type Schema = {
 
 type Relations = {
     // column names as keys
-    post: Post
     user: User
+    post: Post // if you have view collections, use union like "post: Post | ViewCollectionName"
 
     // if the relation is one-to-many or many-to-many, use Array<>
     tags: Array<Tag>
