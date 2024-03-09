@@ -1,5 +1,11 @@
 # pb-option-builder
 
+## 0.1.2
+
+### Patch Changes
+
+- 84258cd: support view collections
+
 ## 0.1.0
 
 ### Minor Changes

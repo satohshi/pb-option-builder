@@ -1,6 +1,6 @@
 {
 	"name": "pb-option-builder",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"description": "Option builder for the official PocketBase SDK that also helps with typing the response",
 	"author": "satohshi",
 	"repository": {
