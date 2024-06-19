@@ -47,18 +47,11 @@ type Expand<
 					}[keyof U]
 				>
 			: never
-		expand?: NonNullable<TRelation[Key]> extends Array<infer U extends TSchema[keyof TSchema]>
+		expand?: NonNullable<TRelation[Key]> extends
+			| Array<infer U extends TSchema[keyof TSchema]>
+			| (infer U extends TSchema[keyof TSchema])
 			? Array<Expand<TSchema, TRelation, Related<TSchema, TRelation, U>>>
-			: NonNullable<TRelation[Key]> extends infer U extends TSchema[keyof TSchema]
-				? Array<Expand<TSchema, TRelation, Related<TSchema, TRelation, U>>>
-				: never
-
-		// Build fails with this simpler syntax due to a bug in esbuild (fixed in v0.19.12 but dependency is not updated yet in tsup and vitest)
-		// expand?: NonNullable<TRelation[Key]> extends
-		// 	| Array<infer U extends TSchema[keyof TSchema]>
-		// 	| infer U extends TSchema[keyof TSchema]
-		// 	? Array<Expand<TSchema, TRelation, Related<TSchema, TRelation, U>>>
-		// 	: never
+			: never
 	}
 }[TKey]
 
