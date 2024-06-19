@@ -150,26 +150,23 @@ type ProcessSingleExpand<
 type HelperArg = { key: string; fields?: string[]; expand?: HelperArg[] }
 
 // baseKey includes "." at the end so that we don't have to check if it's the top level or not
-const getFields = (option: HelperArg, baseKey = ''): string => {
-	const { fields, expand } = option
-
-	let fieldsAtThisLevel: string
-	if (fields) {
-		fieldsAtThisLevel = fields.map((field) => `${baseKey}${field}`).join(',')
-	} else {
-		// if it doesn't expand any further, there's no need to add ".*"
-		fieldsAtThisLevel = expand ? `${baseKey}*` : baseKey.slice(0, -1)
-	}
+const getFields = ({ fields, expand }: HelperArg, baseKey = ''): string => {
+	const fieldsAtThisLevel = fields
+		? fields.map((field) => `${baseKey}${field}`).join(',')
+		: expand
+			? `${baseKey}*`
+			: baseKey.slice(0, -1) // if it doesn't expand any further, there's no need to add ".*"
 
 	if (expand) {
 		// check if any of the expand has fields specified
 		if (JSON.stringify(expand).includes('"fields"')) {
 			const expandFields = expand.map((exp) => {
-				const fieldsAtDeeperLevel = getFields(exp, `${baseKey}expand.${exp.key}.`)
-				return fieldsAtDeeperLevel
+				return getFields(exp, `${baseKey}expand.${exp.key}.`)
 			})
+
 			return `${fieldsAtThisLevel},${expandFields.join(',')}`
 		}
+
 		// if not, add ".*" to include all fields at this level and below
 		return `${fieldsAtThisLevel},${baseKey}expand.*`
 	}
@@ -178,16 +175,11 @@ const getFields = (option: HelperArg, baseKey = ''): string => {
 }
 
 const getExpand = (option: HelperArg[], baseKey = ''): string => {
-	const res = option
-		.map((exp) => {
-			const { key, expand } = exp
-			if (expand) {
-				return `${getExpand(expand, `${baseKey}${key}.`)}`
-			}
-			return `${baseKey}${key}`
+	return option
+		.map(({ key, expand }) => {
+			return expand ? `${getExpand(expand, `${baseKey}${key}.`)}` : `${baseKey}${key}`
 		})
 		.join(',')
-	return res
 }
 
 export const initializeBuilder =
@@ -197,15 +189,10 @@ export const initializeBuilder =
 	): [PocketBaseOption, ResponseType<TSchema, TRelations, T>] => {
 		const { sort, filter, requestKey } = option
 
-		let fields: string | undefined = undefined
-		if (JSON.stringify(option).includes('"fields"')) {
-			fields = getFields(option as HelperArg)
-		}
-
-		let expand: string | undefined = undefined
-		if (option.expand) {
-			expand = getExpand(option.expand as HelperArg[])
-		}
+		const expand = option.expand ? getExpand(option.expand as HelperArg[]) : undefined
+		const fields = JSON.stringify(option).includes('"fields"')
+			? getFields(option as HelperArg)
+			: undefined
 
 		const res = { fields, expand, sort, filter, requestKey }
 
