@@ -1,5 +1,12 @@
 # pb-option-builder
 
+## 0.1.3
+
+### Patch Changes
+
+-   ba82967: update deps
+-   02e9740: refactor
+
 ## 0.1.2
 
 ### Patch Changes
