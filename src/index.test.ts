@@ -83,7 +83,7 @@ describe('builder', () => {
 	it('handles single expand correctly', () => {
 		const [optionObj1, typeObj1] = builder({
 			key: 'posts',
-			expand: [{ key: 'comments_via_post' }]
+			expand: [{ key: 'comments_via_post' }],
 		})
 		expect(optionObj1).toEqual({ expand: 'comments_via_post' })
 		expectTypeOf(typeObj1).toEqualTypeOf<Post & { expand?: { comments_via_post: Comment[] } }>()
@@ -98,11 +98,11 @@ describe('builder', () => {
 		const [optionObj1, typeObj1] = builder({
 			key: 'posts',
 			fields: ['id', 'title'],
-			expand: [{ key: 'comments_via_post' }]
+			expand: [{ key: 'comments_via_post' }],
 		})
 		expect(optionObj1).toEqual({
 			expand: 'comments_via_post',
-			fields: 'id,title,expand.*'
+			fields: 'id,title,expand.*',
 		})
 		expectTypeOf(typeObj1).toEqualTypeOf<
 			Pick<Post, 'id' | 'title'> & {
@@ -113,11 +113,11 @@ describe('builder', () => {
 		// fields specified in expand, but not at top level
 		const [optionObj2, typeObj2] = builder({
 			key: 'posts',
-			expand: [{ key: 'comments_via_post', fields: ['id', 'message'] }]
+			expand: [{ key: 'comments_via_post', fields: ['id', 'message'] }],
 		})
 		expect(optionObj2).toEqual({
 			expand: 'comments_via_post',
-			fields: '*,expand.comments_via_post.id,expand.comments_via_post.message'
+			fields: '*,expand.comments_via_post.id,expand.comments_via_post.message',
 		})
 		expectTypeOf(typeObj2).toEqualTypeOf<
 			Post & {
@@ -129,11 +129,11 @@ describe('builder', () => {
 		const [optionObj3, typeObj3] = builder({
 			key: 'posts',
 			fields: ['id', 'title'],
-			expand: [{ key: 'comments_via_post', fields: ['id', 'message'] }]
+			expand: [{ key: 'comments_via_post', fields: ['id', 'message'] }],
 		})
 		expect(optionObj3).toEqual({
 			expand: 'comments_via_post',
-			fields: 'id,title,expand.comments_via_post.id,expand.comments_via_post.message'
+			fields: 'id,title,expand.comments_via_post.id,expand.comments_via_post.message',
 		})
 		expectTypeOf(typeObj3).toEqualTypeOf<
 			Pick<Post, 'id' | 'title'> & {
@@ -145,7 +145,7 @@ describe('builder', () => {
 	it('handles multiple expand correctly on the same level', () => {
 		const [optionObj1, typeObj1] = builder({
 			key: 'posts',
-			expand: [{ key: 'comments_via_post' }, { key: 'tags' }]
+			expand: [{ key: 'comments_via_post' }, { key: 'tags' }],
 		})
 		expect(optionObj1).toEqual({ expand: 'comments_via_post,tags' })
 		expectTypeOf(typeObj1).toEqualTypeOf<
@@ -160,11 +160,11 @@ describe('builder', () => {
 		const [optionObj1, typeObj1] = builder({
 			key: 'posts',
 			fields: ['id', 'title'],
-			expand: [{ key: 'comments_via_post' }, { key: 'tags' }]
+			expand: [{ key: 'comments_via_post' }, { key: 'tags' }],
 		})
 		expect(optionObj1).toEqual({
 			expand: 'comments_via_post,tags',
-			fields: 'id,title,expand.*'
+			fields: 'id,title,expand.*',
 		})
 		expectTypeOf(typeObj1).toEqualTypeOf<
 			Pick<Post, 'id' | 'title'> & {
@@ -175,11 +175,11 @@ describe('builder', () => {
 		// fields specified in one expand, but not at top level
 		const [optionObj2, typeObj2] = builder({
 			key: 'posts',
-			expand: [{ key: 'comments_via_post', fields: ['id', 'message'] }, { key: 'tags' }]
+			expand: [{ key: 'comments_via_post', fields: ['id', 'message'] }, { key: 'tags' }],
 		})
 		expect(optionObj2).toEqual({
 			expand: 'comments_via_post,tags',
-			fields: '*,expand.comments_via_post.id,expand.comments_via_post.message,expand.tags'
+			fields: '*,expand.comments_via_post.id,expand.comments_via_post.message,expand.tags',
 		})
 		expectTypeOf(typeObj2).toEqualTypeOf<
 			Post & {
@@ -192,12 +192,12 @@ describe('builder', () => {
 			key: 'posts',
 			expand: [
 				{ key: 'comments_via_post', fields: ['id', 'message'] },
-				{ key: 'tags', fields: ['id', 'name'] }
-			]
+				{ key: 'tags', fields: ['id', 'name'] },
+			],
 		})
 		expect(optionObj3).toEqual({
 			expand: 'comments_via_post,tags',
-			fields: '*,expand.comments_via_post.id,expand.comments_via_post.message,expand.tags.id,expand.tags.name'
+			fields: '*,expand.comments_via_post.id,expand.comments_via_post.message,expand.tags.id,expand.tags.name',
 		})
 		expectTypeOf(typeObj3).toEqualTypeOf<
 			Post & {
@@ -214,12 +214,12 @@ describe('builder', () => {
 			fields: ['id', 'title'],
 			expand: [
 				{ key: 'comments_via_post', fields: ['id', 'message'] },
-				{ key: 'tags', fields: ['id', 'name'] }
-			]
+				{ key: 'tags', fields: ['id', 'name'] },
+			],
 		})
 		expect(optionObj4).toEqual({
 			expand: 'comments_via_post,tags',
-			fields: 'id,title,expand.comments_via_post.id,expand.comments_via_post.message,expand.tags.id,expand.tags.name'
+			fields: 'id,title,expand.comments_via_post.id,expand.comments_via_post.message,expand.tags.id,expand.tags.name',
 		})
 		expectTypeOf(typeObj4).toEqualTypeOf<
 			Pick<Post, 'id' | 'title'> & {
@@ -236,12 +236,12 @@ describe('builder', () => {
 			fields: ['id', 'title'],
 			expand: [
 				{ key: 'comments_via_post', fields: ['id', 'message'] },
-				{ key: 'user', fields: ['id', 'name'] }
-			]
+				{ key: 'user', fields: ['id', 'name'] },
+			],
 		})
 		expect(optionObj5).toEqual({
 			expand: 'comments_via_post,user',
-			fields: 'id,title,expand.comments_via_post.id,expand.comments_via_post.message,expand.user.id,expand.user.name'
+			fields: 'id,title,expand.comments_via_post.id,expand.comments_via_post.message,expand.user.id,expand.user.name',
 		})
 		expectTypeOf(typeObj5).toEqualTypeOf<
 			Pick<Post, 'id' | 'title'> & {
@@ -256,10 +256,10 @@ describe('builder', () => {
 	it('handles multi-layer expand correctly', () => {
 		const [optionObj1, typeObj1] = builder({
 			key: 'posts',
-			expand: [{ key: 'comments_via_post', expand: [{ key: 'user' }] }, { key: 'tags' }]
+			expand: [{ key: 'comments_via_post', expand: [{ key: 'user' }] }, { key: 'tags' }],
 		})
 		expect(optionObj1).toEqual({
-			expand: 'comments_via_post.user,tags'
+			expand: 'comments_via_post.user,tags',
 		})
 		expectTypeOf(typeObj1).toEqualTypeOf<
 			Post & {
@@ -277,13 +277,13 @@ describe('builder', () => {
 					key: 'posts_via_user',
 					expand: [
 						{ key: 'comments_via_post', expand: [{ key: 'user' }] },
-						{ key: 'tags' }
-					]
-				}
-			]
+						{ key: 'tags' },
+					],
+				},
+			],
 		})
 		expect(optionObj2).toEqual({
-			expand: 'posts_via_user.comments_via_post.user,posts_via_user.tags'
+			expand: 'posts_via_user.comments_via_post.user,posts_via_user.tags',
 		})
 		expectTypeOf(typeObj2).toEqualTypeOf<
 			User & {
@@ -308,11 +308,11 @@ describe('builder', () => {
 		const [optionObj1, typeObj1] = builder({
 			key: 'posts',
 			fields: ['id', 'title'],
-			expand: [{ key: 'tags' }, { key: 'comments_via_post', expand: [{ key: 'user' }] }]
+			expand: [{ key: 'tags' }, { key: 'comments_via_post', expand: [{ key: 'user' }] }],
 		})
 		expect(optionObj1).toEqual({
 			expand: 'tags,comments_via_post.user',
-			fields: 'id,title,expand.*'
+			fields: 'id,title,expand.*',
 		})
 		expectTypeOf(typeObj1).toEqualTypeOf<
 			Pick<Post, 'id' | 'title'> & {
@@ -328,12 +328,12 @@ describe('builder', () => {
 			key: 'posts',
 			expand: [
 				{ key: 'tags' },
-				{ key: 'comments_via_post', expand: [{ key: 'user', fields: ['id', 'name'] }] }
-			]
+				{ key: 'comments_via_post', expand: [{ key: 'user', fields: ['id', 'name'] }] },
+			],
 		})
 		expect(optionObj2).toEqual({
 			expand: 'tags,comments_via_post.user',
-			fields: '*,expand.tags,expand.comments_via_post.*,expand.comments_via_post.expand.user.id,expand.comments_via_post.expand.user.name'
+			fields: '*,expand.tags,expand.comments_via_post.*,expand.comments_via_post.expand.user.id,expand.comments_via_post.expand.user.name',
 		})
 		expectTypeOf(typeObj2).toEqualTypeOf<
 			Post & {
@@ -356,13 +356,13 @@ describe('builder', () => {
 				{
 					key: 'comments_via_post',
 					fields: ['id', 'message'],
-					expand: [{ key: 'user', fields: ['id', 'name'] }]
-				}
-			]
+					expand: [{ key: 'user', fields: ['id', 'name'] }],
+				},
+			],
 		})
 		expect(optionObj3).toEqual({
 			expand: 'tags,comments_via_post.user',
-			fields: '*,expand.tags.id,expand.tags.name,expand.comments_via_post.id,expand.comments_via_post.message,expand.comments_via_post.expand.user.id,expand.comments_via_post.expand.user.name'
+			fields: '*,expand.tags.id,expand.tags.name,expand.comments_via_post.id,expand.comments_via_post.message,expand.comments_via_post.expand.user.id,expand.comments_via_post.expand.user.name',
 		})
 		expectTypeOf(typeObj3).toEqualTypeOf<
 			Post & {
@@ -386,13 +386,13 @@ describe('builder', () => {
 				{
 					key: 'comments_via_post',
 					fields: ['id', 'message'],
-					expand: [{ key: 'user', fields: ['id', 'name'] }]
-				}
-			]
+					expand: [{ key: 'user', fields: ['id', 'name'] }],
+				},
+			],
 		})
 		expect(optionObj4).toEqual({
 			expand: 'tags,comments_via_post.user',
-			fields: 'id,title,expand.tags.id,expand.tags.name,expand.comments_via_post.id,expand.comments_via_post.message,expand.comments_via_post.expand.user.id,expand.comments_via_post.expand.user.name'
+			fields: 'id,title,expand.tags.id,expand.tags.name,expand.comments_via_post.id,expand.comments_via_post.message,expand.comments_via_post.expand.user.id,expand.comments_via_post.expand.user.name',
 		})
 		expectTypeOf(typeObj4).toEqualTypeOf<
 			Pick<Post, 'id' | 'title'> & {
@@ -413,12 +413,12 @@ describe('builder', () => {
 			fields: ['id', 'title'],
 			expand: [
 				{ key: 'tags', fields: ['id', 'name'] },
-				{ key: 'comments_via_post', fields: ['id', 'message'], expand: [{ key: 'user' }] }
-			]
+				{ key: 'comments_via_post', fields: ['id', 'message'], expand: [{ key: 'user' }] },
+			],
 		})
 		expect(optionObj5).toEqual({
 			expand: 'tags,comments_via_post.user',
-			fields: 'id,title,expand.tags.id,expand.tags.name,expand.comments_via_post.id,expand.comments_via_post.message,expand.comments_via_post.expand.*'
+			fields: 'id,title,expand.tags.id,expand.tags.name,expand.comments_via_post.id,expand.comments_via_post.message,expand.comments_via_post.expand.*',
 		})
 		expectTypeOf(typeObj5).toEqualTypeOf<
 			Pick<Post, 'id' | 'title'> & {
@@ -439,12 +439,12 @@ describe('builder', () => {
 			fields: ['id', 'title'],
 			expand: [
 				{ key: 'tags', fields: ['id', 'name'] },
-				{ key: 'comments_via_post', expand: [{ key: 'user', fields: ['id', 'name'] }] }
-			]
+				{ key: 'comments_via_post', expand: [{ key: 'user', fields: ['id', 'name'] }] },
+			],
 		})
 		expect(optionObj6).toEqual({
 			expand: 'tags,comments_via_post.user',
-			fields: 'id,title,expand.tags.id,expand.tags.name,expand.comments_via_post.*,expand.comments_via_post.expand.user.id,expand.comments_via_post.expand.user.name'
+			fields: 'id,title,expand.tags.id,expand.tags.name,expand.comments_via_post.*,expand.comments_via_post.expand.user.id,expand.comments_via_post.expand.user.name',
 		})
 		expectTypeOf(typeObj6).toEqualTypeOf<
 			Pick<Post, 'id' | 'title'> & {
@@ -463,7 +463,7 @@ describe('builder', () => {
 	it('ignores modifiers like :excerpt', () => {
 		const [optionObj, typeObj] = builder({
 			key: 'posts',
-			fields: ['id', 'title:excerpt(200, true)']
+			fields: ['id', 'title:excerpt(200, true)'],
 		})
 		expect(optionObj).toEqual({ fields: 'id,title:excerpt(200, true)' })
 		expectTypeOf(typeObj).toEqualTypeOf<Pick<Post, 'id' | 'title'>>()
@@ -471,11 +471,11 @@ describe('builder', () => {
 		const [optionObj2, typeObj2] = builder({
 			key: 'posts',
 			fields: ['id', 'title'],
-			expand: [{ key: 'comments_via_post', fields: ['id', 'message:excerpt(200)'] }]
+			expand: [{ key: 'comments_via_post', fields: ['id', 'message:excerpt(200)'] }],
 		})
 		expect(optionObj2).toEqual({
 			expand: 'comments_via_post',
-			fields: 'id,title,expand.comments_via_post.id,expand.comments_via_post.message:excerpt(200)'
+			fields: 'id,title,expand.comments_via_post.id,expand.comments_via_post.message:excerpt(200)',
 		})
 		expectTypeOf(typeObj2).toEqualTypeOf<
 			Pick<Post, 'id' | 'title'> & {

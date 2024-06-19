@@ -4,16 +4,16 @@ import { defineWorkspace } from 'vitest/config'
 export default defineWorkspace([
 	{
 		test: {
-			name: 'Test option object'
-		}
+			name: 'Test option object',
+		},
 	},
 	{
 		test: {
 			name: 'Test type object',
 			typecheck: {
 				enabled: true,
-				include: ['**/src/**/*.test.ts']
-			}
-		}
-	}
+				include: ['**/src/**/*.test.ts'],
+			},
+		},
+	},
 ])

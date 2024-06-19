@@ -36,7 +36,7 @@ type Option<TSchema extends BaseSchema, TRelation extends BaseRelation<TSchema>>
 type Expand<
 	TSchema extends BaseSchema,
 	TRelation extends BaseRelation<TSchema>,
-	TKey extends keyof TRelation
+	TKey extends keyof TRelation,
 > = {
 	[Key in TKey]: {
 		key: Key
@@ -81,60 +81,62 @@ type ResponseType<
 	TSchema extends BaseSchema,
 	TRelation extends BaseRelation<TSchema>,
 	TOption extends Option<TSchema, TRelation>,
-	_Obj = TSchema[TOption['key']]
+	_Obj = TSchema[TOption['key']],
 > = (FieldsArrayToUnion<TOption['fields']> extends infer Fields extends keyof _Obj
 	? Pick<_Obj, Fields>
 	: _Obj) &
 	ProcessExpandArray<TSchema, TRelation, TOption['expand']>
 
 // check if all items in "expand" array are optional
-type AllOptional<TRelation, T extends Array<{ key: keyof TRelation }>> = {
-	[Obj in T[number] as Obj['key']]: undefined extends TRelation[Obj['key']] ? true : false
-} extends Record<PropertyKey, true>
-	? true
-	: false
+type AllOptional<TRelation, T extends Array<{ key: keyof TRelation }>> =
+	{
+		[Obj in T[number] as Obj['key']]: undefined extends TRelation[Obj['key']] ? true : false
+	} extends Record<PropertyKey, true>
+		? true
+		: false
 
 type ProcessExpandArray<
 	TSchema extends BaseSchema,
 	TRelation extends BaseRelation<TSchema>,
-	TExpandArr
-> = TExpandArr extends Array<Expand<TSchema, TRelation, keyof TRelation>>
-	? AllOptional<TRelation, TExpandArr> extends true
-		? {
-				expand?: TExpandArr['length'] extends 1
-					? // if there's only one expand, whether "expand" is undefined or not depends on that single expand
-						{
+	TExpandArr,
+> =
+	TExpandArr extends Array<Expand<TSchema, TRelation, keyof TRelation>>
+		? AllOptional<TRelation, TExpandArr> extends true
+			? {
+					expand?: TExpandArr['length'] extends 1
+						? // if there's only one expand, whether "expand" is undefined or not depends on that single expand
+							{
+								[E in TExpandArr[number] as E['key']]: ProcessSingleExpand<
+									TSchema,
+									TRelation,
+									E
+								>
+							}
+						: // if there's more than one expand, we still need to check if each item is undefined or not, even after checking "expand" is not undefined
+							{
+								[E in TExpandArr[number] as E['key']]?: ProcessSingleExpand<
+									TSchema,
+									TRelation,
+									E
+								>
+							}
+				}
+			: {
+					// if there's expand item that we know for sure isn't undefined, we don't need to +? on "expand" itself
+					expand: {
+						// AFAIK, there's no way to add "?" modifier conditionally, so we have to use keys from TRelation
+						[Key in keyof TRelation as Key extends TExpandArr[number]['key']
+							? Key
+							: never]: {
 							[E in TExpandArr[number] as E['key']]: ProcessSingleExpand<
 								TSchema,
 								TRelation,
 								E
 							>
-						}
-					: // if there's more than one expand, we still need to check if each item is undefined or not, even after checking "expand" is not undefined
-						{
-							[E in TExpandArr[number] as E['key']]?: ProcessSingleExpand<
-								TSchema,
-								TRelation,
-								E
-							>
-						}
-			}
-		: {
-				// if there's expand item that we know for sure isn't undefined, we don't need to +? on "expand" itself
-				expand: {
-					// AFAIK, there's no way to add "?" modifier conditionally, so we have to use keys from TRelation
-					[Key in keyof TRelation as Key extends TExpandArr[number]['key']
-						? Key
-						: never]: {
-						[E in TExpandArr[number] as E['key']]: ProcessSingleExpand<
-							TSchema,
-							TRelation,
-							E
-						>
-					}[Key]
+						}[Key]
+					}
 				}
-			}
-	: unknown // "never" doesn't work here because "any & never" is never
+		: unknown // "never" doesn't work here because "any & never" is never
 
 type HandleArray<T, IsArray extends boolean> = IsArray extends true ? Array<T> : T
 
@@ -142,7 +144,7 @@ type ProcessSingleExpand<
 	TSchema extends BaseSchema,
 	TRelation extends BaseRelation<TSchema>,
 	TExpand extends Expand<TSchema, TRelation, keyof TRelation>,
-	_Obj = NonNullable<TRelation[TExpand['key']]> extends Array<infer U> | infer U ? U : never
+	_Obj = NonNullable<TRelation[TExpand['key']]> extends Array<infer U> | infer U ? U : never,
 > = HandleArray<
 	(FieldsArrayToUnion<TExpand['fields']> extends infer Fields extends keyof _Obj
 		? Pick<_Obj, Fields>
