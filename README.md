@@ -1,5 +1,8 @@
 # PocketBase Type-safe Option Builder
 
+> [!IMPORTANT]  
+> This package has been deprecated in favour of [pocketbase-ts](https://github.com/satohshi/pocketbase-ts) and is no longer maintained.
+
 Option builder for [PocketBase JavaScript SDK](https://github.com/pocketbase/js-sdk), that also helps with typing the response.
 
 This is how you would normally write options for the PocketBase SDK:
@@ -306,8 +309,3 @@ const [optionsObj, typeObj] = optionBuilder({
 	],
 })
 ```
-
-## Why not just integrate this into the SDK?
-
--   This way, you can start using this in existing projects without having to change anything. I think most of the time, you don't need to pass in any options to the SDK, so installing a new custom SDK for a very few instances where you need to seems like an overkill.
--   There are many functionalities of the official SDK that I don't use or understand fully, and I don't want to maintain a fork of it just for this.
